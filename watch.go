@@ -10,7 +10,6 @@ import (
 	"os/exec"
 	"reflect"
 	"runtime"
-	"strings"
 	"sync"
 	"text/template"
 	"time"
@@ -295,17 +294,18 @@ func backoff(interval time.Duration, times int) time.Duration {
 
 // formatOutput converts the service entries into a format
 // suitable for templating into the HAProxy file
-func formatOutput(inp map[string][]*consulapi.ServiceEntry) map[string]string {
-	out := make(map[string]string)
+func formatOutput(inp map[string][]*consulapi.ServiceEntry) map[string][]string {
+	out := make(map[string][]string)
 	for backend, entries := range inp {
 		servers := make([]string, len(entries))
 		for idx, entry := range entries {
+			// TODO: Avoid multi-DC name conflict
 			name := fmt.Sprintf("%s_%s", entry.Node.Node, entry.Service.ID)
 			ip := net.ParseIP(entry.Node.Address)
 			addr := &net.TCPAddr{IP: ip, Port: entry.Service.Port}
-			servers[idx] = fmt.Sprintf("\tserver %s %s\n", name, addr)
+			servers[idx] = fmt.Sprintf("server %s %s", name, addr)
 		}
-		out[backend] = strings.Join(servers, "")
+		out[backend] = servers
 	}
 	return out
 }
