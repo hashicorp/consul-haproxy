@@ -92,9 +92,9 @@ func runWatch(conf *Config, stopCh, doneCh chan struct{}) {
 
 	// Start the watches
 	data.Lock()
-	for _, watch := range conf.watches {
+	for idx, watch := range conf.watches {
 		data.Backends[watch.Backend] = append(data.Backends[watch.Backend], watch)
-		go runSingleWatch(conf, data, watch)
+		go runSingleWatch(conf, data, idx, watch)
 	}
 	data.Unlock()
 
@@ -182,7 +182,7 @@ func maybeRefresh(conf *Config, data *backendData) (exit bool) {
 }
 
 // runSingleWatch is used to query a single watch path for changes
-func runSingleWatch(conf *Config, data *backendData, watch *WatchPath) {
+func runSingleWatch(conf *Config, data *backendData, idx int, watch *WatchPath) {
 	health := data.Client.Health()
 	opts := &consulapi.QueryOptions{
 		WaitTime: waitTime,
@@ -201,12 +201,15 @@ func runSingleWatch(conf *Config, data *backendData, watch *WatchPath) {
 			log.Printf("[ERR] Failed to fetch service nodes: %v", err)
 		}
 
-		// Fixup the ports if necessary
-		if watch.Port != 0 {
-			for _, entry := range entries {
-				if entry.Service.Port == 0 {
-					entry.Service.Port = watch.Port
-				}
+		// Patch the entries as necessary
+		for _, entry := range entries {
+			// Modify the node name to prefix with the watch ID. This
+			// prevents a name conflict on duplicate names
+			entry.Node.Node = fmt.Sprintf("%d_%s", idx, entry.Node.Node)
+
+			// Patch the port if provided and the service hasn't registered
+			if watch.Port != 0 && entry.Service.Port == 0 {
+				entry.Service.Port = watch.Port
 			}
 		}
 
@@ -299,7 +302,6 @@ func formatOutput(inp map[string][]*consulapi.ServiceEntry) map[string][]string 
 	for backend, entries := range inp {
 		servers := make([]string, len(entries))
 		for idx, entry := range entries {
-			// TODO: Avoid multi-DC name conflict
 			name := fmt.Sprintf("%s_%s", entry.Node.Node, entry.Service.ID)
 			ip := net.ParseIP(entry.Node.Address)
 			addr := &net.TCPAddr{IP: ip, Port: entry.Service.Port}
