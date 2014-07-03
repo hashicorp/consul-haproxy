@@ -63,9 +63,60 @@ func TestReadConfig(t *testing.T) {
 	backends := []string{
 		"app=foo",
 		"app=tag.foo",
-		"app=tag.foo@dc2",
+		"app=tag.foo@dc2:8000",
 	}
 	if !reflect.DeepEqual(conf.Backends, backends) {
 		t.Fatalf("bad: %v", conf)
+	}
+}
+
+func TestValidateConfig_Good(t *testing.T) {
+	conf := &Config{}
+	err := readConfig("test-fixtures/config.json", conf)
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	errs := validateConfig(conf)
+	if len(errs) > 0 {
+		t.Fatalf("err: %v", errs)
+	}
+	if len(conf.watches) != 3 {
+		t.Fatalf("bad: %v", conf.watches)
+	}
+	wp1 := &WatchPath{
+		Spec:    "app=foo",
+		Backend: "app",
+		Service: "foo",
+	}
+	if !reflect.DeepEqual(wp1, conf.watches[0]) {
+		t.Fatalf("bad: %v", conf.watches[0])
+	}
+	wp2 := &WatchPath{
+		Spec:    "app=tag.foo",
+		Backend: "app",
+		Tag:     "tag",
+		Service: "foo",
+	}
+	if !reflect.DeepEqual(wp2, conf.watches[1]) {
+		t.Fatalf("bad: %v", conf.watches[1])
+	}
+	wp3 := &WatchPath{
+		Spec:       "app=tag.foo@dc2:8000",
+		Backend:    "app",
+		Tag:        "tag",
+		Service:    "foo",
+		Datacenter: "dc2",
+		Port:       8000,
+	}
+	if !reflect.DeepEqual(wp3, conf.watches[2]) {
+		t.Fatalf("bad: %v", conf.watches[2])
+	}
+}
+
+func TestValidateConfig_Missing(t *testing.T) {
+	conf := &Config{}
+	errs := validateConfig(conf)
+	if len(errs) != 4 {
+		t.Fatalf("bad: %v", errs)
 	}
 }

@@ -7,6 +7,6 @@
     "backends": [
         "app=foo",
         "app=tag.foo",
-        "app=tag.foo@dc2"
+        "app=tag.foo@dc2:8000"
     ]
 }
