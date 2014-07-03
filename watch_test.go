@@ -2,9 +2,28 @@ package main
 
 import (
 	"github.com/armon/consul-api"
+	"io/ioutil"
+	"os"
 	"testing"
 	"time"
 )
+
+func TestReload(t *testing.T) {
+	os.Remove("test_out")
+	conf := &Config{
+		ReloadCommand: "echo 'foo' > test_out",
+	}
+	if err := reload(conf); err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	bytes, err := ioutil.ReadFile("test_out")
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	if string(bytes) != "foo\n" {
+		t.Fatalf("bad: %v", bytes)
+	}
+}
 
 func TestShouldStop(t *testing.T) {
 	ch := make(chan struct{})
