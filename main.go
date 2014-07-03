@@ -252,9 +252,45 @@ const helpText = `
 Usage: %s [options]
 
   Watches a service group in Consul and dynamically configures
-  an HAProxy backend.
+  an HAProxy backend. The process runs continuously, monitoring
+  all the backends for changes. When there is a change, the template
+  file is rendered to a destination path, and a reload command is
+  invoked. This allows HAProxy configuration to be updated in real
+  time using Consul.
+
+  Backends are specified using the following syntax:
+
+    app=release.webapp@east-aws:8000
+
+  In this syntax, we are defining a template variable 'app',
+  which is populated from the 'webapp' service, 'release' tag, in the
+  'east-aws' datacenter, using port 8000. The port is only used if
+  the service does not define its port (e.g. specified as 0). The
+  tag, datacenter and port are optional. So we could also specify
+  this as:
+
+    app=webapp
+
+  This exports the 'app' variable as just the nodes in the 'webapp'
+  service in the local datacenter. Multiple backends can be specified,
+  and even multiple watches for a given backend.
+
+  For example:
+
+    app=webapp@east-aws
+    app=webapp@west-aws
+
+  This will watch both the 'east-aws' and 'west-aws' datacenters to
+  populate the nodes in the 'app' backend. This can be used to merge
+  multiple tags, datacenters, etc into a single backend.
 
 Options:
 
   -addr=127.0.0.1:8500  Provides the HTTP address of a Consul agent.
+  -backend=spec         Backend specification. Can be provided multiple times.
+  -dry                  Dry run. Emit config file to stdout.
+  -f=path               Path to config file, overwrites CLI flags
+  -path=path            Path to output configuration file
+  -reload=cmd           Command to invoke to reload configuration
+  -template=path        Path to a template file
 `
