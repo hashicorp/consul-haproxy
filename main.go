@@ -20,9 +20,9 @@ import (
 )
 
 // WatchRE is used to parse a backend configuration. The config should
-// look like "backend=tag.service.datacenter:port". However, the tag, port and
+// look like "backend=tag.service@datacenter:port". However, the tag, port and
 // datacenter are optional, so it can also be provided as "backend=service"
-var WatchRE = regexp.MustCompile("^([^=]+)=([^.]+\\.)?([^.:]+)(\\.[^.:]+)?(:[0-9]+)?$")
+var WatchRE = regexp.MustCompile("^([^=]+)=([^.]+\\.)?([^.:@]+)(@[^.:]+)?(:[0-9]+)?$")
 
 // WatchPath represents a path we need to watch
 type WatchPath struct {
@@ -171,7 +171,7 @@ func validateConfig(conf *Config) (errs []error) {
 			Backend:    parts[1],
 			Tag:        strings.TrimSuffix(parts[2], "."),
 			Service:    parts[3],
-			Datacenter: strings.TrimPrefix(parts[4], "."),
+			Datacenter: strings.TrimPrefix(parts[4], "@"),
 			Port:       port,
 		}
 		conf.watches = append(conf.watches, wp)
