@@ -6,6 +6,45 @@ import (
 	"time"
 )
 
+func TestShouldStop(t *testing.T) {
+	ch := make(chan struct{})
+	if shouldStop(ch) {
+		t.Fatalf("bad")
+	}
+	close(ch)
+	if !shouldStop(ch) {
+		t.Fatalf("bad")
+	}
+}
+
+func TestAsyncNotify(t *testing.T) {
+	ch := make(chan struct{}, 1)
+	asyncNotify(ch)
+	asyncNotify(ch)
+	asyncNotify(ch)
+
+	select {
+	case <-ch:
+	default:
+		t.Fatalf("should work")
+	}
+	select {
+	case <-ch:
+		t.Fatalf("should not work")
+	default:
+	}
+
+}
+
+func TestMin(t *testing.T) {
+	if min(1, 2) != 1 {
+		t.Fatalf("Bad")
+	}
+	if min(2, 1) != 1 {
+		t.Fatalf("Bad")
+	}
+}
+
 func TestBackoff(t *testing.T) {
 	type val struct {
 		fail   int
