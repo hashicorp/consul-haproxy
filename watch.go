@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
 	"net"
 	"os"
 	"os/exec"
@@ -23,7 +24,7 @@ const (
 
 	// maxFailures controls the maximum number of failures
 	// before we limit the sleep value
-	maxFailures = 3
+	maxFailures = 5
 
 	// waitTime is used to control how long we do a blocking
 	// query for
@@ -310,11 +311,8 @@ func min(a, b int) int {
 
 // backoff is used to compute an exponential backoff
 func backoff(interval time.Duration, times int) time.Duration {
-	base := interval
-	for ; times > 1; times-- {
-		base *= interval
-	}
-	return interval
+	times--
+	return interval * time.Duration(math.Pow(2, float64(times)))
 }
 
 // formatOutput converts the service entries into a format
