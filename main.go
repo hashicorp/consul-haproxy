@@ -64,32 +64,45 @@ func main() {
 	os.Exit(realMain())
 }
 
-// realMain is the actual entry point, but we wrap it to set
-// a proper exit code on return
-func realMain() int {
+// getConfig is used to read our configuration
+func getConfig() (*Config, error) {
 	var configFile string
 	var backends []string
 	conf := &Config{}
-	flag.Usage = usage
-	flag.StringVar(&conf.Address, "addr", "127.0.0.1:8500", "consul HTTP API address with port")
-	flag.StringVar(&conf.Template, "template", "", "template path")
-	flag.StringVar(&conf.Path, "path", "", "config path")
-	flag.StringVar(&conf.ReloadCommand, "reload", "", "reload command")
-	flag.StringVar(&configFile, "f", "", "config file")
-	flag.BoolVar(&conf.DryRun, "dry", false, "dry run")
-	flag.Var((*AppendSliceValue)(&backends), "backend", "backend to populate")
-	flag.Parse()
+	cmdFlags := flag.NewFlagSet("consul-haproxy", flag.ContinueOnError)
+	cmdFlags.Usage = usage
+	cmdFlags.StringVar(&conf.Address, "addr", "127.0.0.1:8500", "consul HTTP API address with port")
+	cmdFlags.StringVar(&conf.Template, "template", "", "template path")
+	cmdFlags.StringVar(&conf.Path, "path", "", "config path")
+	cmdFlags.StringVar(&conf.ReloadCommand, "reload", "", "reload command")
+	cmdFlags.StringVar(&configFile, "f", "", "config file")
+	cmdFlags.BoolVar(&conf.DryRun, "dry", false, "dry run")
+	cmdFlags.Var((*AppendSliceValue)(&backends), "backend", "backend to populate")
+	if err := cmdFlags.Parse(os.Args[1:]); err != nil {
+		return nil, err
+	}
 
 	// Parse the configuration file if given
 	if configFile != "" {
 		if err := readConfig(configFile, conf); err != nil {
-			log.Printf("[ERR] Failed to read config file: %v", err)
-			return 1
+			return nil, fmt.Errorf("Failed to read config file: %v", err)
 		}
 	}
 
 	// Merge the backends together
 	conf.Backends = append(conf.Backends, backends...)
+	return conf, nil
+}
+
+// realMain is the actual entry point, but we wrap it to set
+// a proper exit code on return
+func realMain() int {
+	// Read the configuration
+	conf, err := getConfig()
+	if err != nil {
+		log.Printf("[ERR] %v", err)
+		return 1
+	}
 
 	// Sanity check the configuration
 	if errs := validateConfig(conf); len(errs) != 0 {
@@ -189,14 +202,31 @@ func waitForTerm(conf *Config, stopCh, finishCh chan struct{}) int {
 		case sig := <-signalCh:
 			switch sig {
 			case syscall.SIGHUP:
-				// TODO: Handle reload
-				log.Printf("[WARN] SIGHUP received, reloading configuration...")
+				// Read the configuration
+				log.Printf("[INFO] SIGHUP received, reloading configuration...")
+				newConf, err := getConfig()
+				if err != nil {
+					log.Printf("[ERR] Failed to read new config: %v", err)
+					continue
+				}
+
+				// Sanity check the configuration
+				if errs := validateConfig(newConf); len(errs) != 0 {
+					for _, err := range errs {
+						log.Printf("[ERR] %v", err)
+					}
+					continue
+				}
+
+				// Switch to the new configuration
+				conf = newConf
 
 				// Stop the existing watcher
 				close(stopCh)
 
 				// Start a new watcher
 				stopCh, finishCh = watch(conf)
+				log.Printf("[INFO] Configuration reload complete")
 
 			default:
 				log.Printf("[WARN] Received %v signal, shutting down", sig)
