@@ -38,13 +38,13 @@ type WatchPath struct {
 type Config struct {
 	// DryRun is used to avoid actually modifying the file
 	// or reloading HAProxy.
-	DryRun bool
+	DryRun bool `mapstructure:"dry_run"`
 
 	// Address is the Consul HTTP API address
 	Address string `mapstructure:"address"`
 
 	// Path to the HAProxy template file
-	Template string `mapstructure:"tempalte"`
+	Template string `mapstructure:"template"`
 
 	// Path to the HAProxy configuration file to write
 	Path string `mapstructure:"path"`

@@ -1,0 +1,12 @@
+{
+    "dry_run": true,
+    "address": "127.0.0.2:8500",
+    "template": "test-fixtures/simple.conf",
+    "path": "output.conf",
+    "reload_command": "echo 'foo' > reload_out",
+    "backends": [
+        "app=foo",
+        "app=tag.foo",
+        "app=tag.foo@dc2"
+    ]
+}
