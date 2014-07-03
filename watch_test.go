@@ -9,6 +9,53 @@ import (
 	"time"
 )
 
+func TestAggregateServers(t *testing.T) {
+	en1 := &consulapi.ServiceEntry{
+		Node:    &consulapi.Node{Node: "node1", Address: "127.0.0.1"},
+		Service: &consulapi.AgentService{ID: "app", Port: 8000},
+	}
+	en2 := &consulapi.ServiceEntry{
+		Node:    &consulapi.Node{Node: "node3", Address: "127.0.0.3"},
+		Service: &consulapi.AgentService{ID: "app", Port: 8000},
+	}
+	en3 := &consulapi.ServiceEntry{
+		Node:    &consulapi.Node{Node: "node2", Address: "127.0.0.2"},
+		Service: &consulapi.AgentService{ID: "db", Port: 5000},
+	}
+	wp1 := &WatchPath{Backend: "app"}
+	wp2 := &WatchPath{Backend: "app"}
+	wp3 := &WatchPath{Backend: "db"}
+	d := &backendData{
+		Servers: map[*WatchPath][]*consulapi.ServiceEntry{
+			wp1: []*consulapi.ServiceEntry{en1},
+			wp2: []*consulapi.ServiceEntry{en2},
+			wp3: []*consulapi.ServiceEntry{en3},
+		},
+		Backends: map[string][]*WatchPath{
+			"app": []*WatchPath{wp1, wp2},
+			"db":  []*WatchPath{wp3},
+		},
+	}
+	agg := aggregateServers(d)
+	if len(agg) != 2 {
+		t.Fatalf("Bad: %v", agg)
+	}
+	app := agg["app"]
+	if len(app) != 2 {
+		t.Fatalf("Bad: %v", app)
+	}
+	if app[0] != en1 && app[1] != en2 {
+		t.Fatalf("Bad: %v", app)
+	}
+	db := agg["db"]
+	if len(db) != 1 {
+		t.Fatalf("Bad: %v", db)
+	}
+	if db[0] != en3 {
+		t.Fatalf("Bad: %v", db)
+	}
+}
+
 func TestBuildTemplate(t *testing.T) {
 	conf := &Config{
 		Template: "test-fixtures/simple.conf",
