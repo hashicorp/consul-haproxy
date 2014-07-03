@@ -115,58 +115,28 @@ func runWatch(conf *Config, stopCh, doneCh chan struct{}) {
 // maybeRefresh is used to handle a potential config update
 func maybeRefresh(conf *Config, data *backendData) (exit bool) {
 	// Ignore initial updates until all the data is ready
-	data.Lock()
-	num := len(data.Servers)
-	data.Unlock()
-	if num < len(conf.watches) {
+	if !allWatchesReturned(conf, data) {
 		return
 	}
 
 	// Merge the data for each backend
-	backendServers := make(map[string][]*consulapi.ServiceEntry)
-	data.Lock()
-	for backend, watches := range data.Backends {
-		var all []*consulapi.ServiceEntry
-		for _, watch := range watches {
-			entries := data.Servers[watch]
-			all = append(all, entries...)
-		}
-		backendServers[backend] = all
-	}
-	data.Unlock()
+	backendServers := aggregateServers(data)
 
-	// Format the output
-	outVars := formatOutput(backendServers)
-
-	// Read the template
-	raw, err := ioutil.ReadFile(conf.Template)
+	// Build the output template
+	output, err := buildTemplate(conf, backendServers)
 	if err != nil {
-		log.Printf("[ERR] Failed to read template: %v", err)
-		return true
-	}
-
-	// Create the template
-	templ, err := template.New("output").Parse(string(raw))
-	if err != nil {
-		log.Printf("[ERR] Failed to parse the template: %v", err)
-		return true
-	}
-
-	// Generate the output
-	var output bytes.Buffer
-	if err := templ.Execute(&output, outVars); err != nil {
-		log.Printf("[ERR] Failed to generate the template: %v", err)
+		log.Printf("[ERR] %v", err)
 		return true
 	}
 
 	// Check for a dry run
 	if conf.DryRun {
-		fmt.Printf("%s\n", output.Bytes())
+		fmt.Printf("%s\n", output)
 		return true
 	}
 
 	// Write out the configuration
-	if err := ioutil.WriteFile(conf.Path, output.Bytes(), 0660); err != nil {
+	if err := ioutil.WriteFile(conf.Path, output, 0660); err != nil {
 		log.Printf("[ERR] Failed to write config file: %v", err)
 		return true
 	}
@@ -179,6 +149,58 @@ func maybeRefresh(conf *Config, data *backendData) (exit bool) {
 		log.Printf("[INFO] Completed reload")
 	}
 	return
+}
+
+// allWatchesReturned checks if all the watches have some
+// data registered. Prevents early template generation.
+func allWatchesReturned(conf *Config, data *backendData) bool {
+	data.Lock()
+	defer data.Unlock()
+	return len(data.Servers) >= len(conf.watches)
+}
+
+// aggregateServers merges the watches belonging to each
+// backend together to prepare for template generation
+func aggregateServers(data *backendData) map[string][]*consulapi.ServiceEntry {
+	backendServers := make(map[string][]*consulapi.ServiceEntry)
+	data.Lock()
+	defer data.Unlock()
+	for backend, watches := range data.Backends {
+		var all []*consulapi.ServiceEntry
+		for _, watch := range watches {
+			entries := data.Servers[watch]
+			all = append(all, entries...)
+		}
+		backendServers[backend] = all
+	}
+	return backendServers
+}
+
+// buildTemplate is used to build the output template
+// from the configuration and server list
+func buildTemplate(conf *Config,
+	servers map[string][]*consulapi.ServiceEntry) ([]byte, error) {
+	// Format the output
+	outVars := formatOutput(servers)
+
+	// Read the template
+	raw, err := ioutil.ReadFile(conf.Template)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read template: %v", err)
+	}
+
+	// Create the template
+	templ, err := template.New("output").Parse(string(raw))
+	if err != nil {
+		return nil, fmt.Errorf("Failed to parse the template: %v", err)
+	}
+
+	// Generate the output
+	var output bytes.Buffer
+	if err := templ.Execute(&output, outVars); err != nil {
+		return nil, fmt.Errorf("Failed to generate the template: %v", err)
+	}
+	return output.Bytes(), nil
 }
 
 // runSingleWatch is used to query a single watch path for changes
