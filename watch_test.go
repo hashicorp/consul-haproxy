@@ -1,12 +1,45 @@
 package main
 
 import (
+	"bytes"
 	"github.com/armon/consul-api"
 	"io/ioutil"
 	"os"
 	"testing"
 	"time"
 )
+
+func TestBuildTemplate(t *testing.T) {
+	conf := &Config{
+		Template: "test-fixtures/simple.conf",
+	}
+	servers := map[string][]*consulapi.ServiceEntry{
+		"app": []*consulapi.ServiceEntry{
+			&consulapi.ServiceEntry{
+				Node:    &consulapi.Node{Node: "node1", Address: "127.0.0.1"},
+				Service: &consulapi.AgentService{ID: "app", Port: 8000},
+			},
+			&consulapi.ServiceEntry{
+				Node:    &consulapi.Node{Node: "node3", Address: "127.0.0.3"},
+				Service: &consulapi.AgentService{ID: "app", Port: 8000},
+			},
+		},
+	}
+
+	out, err := buildTemplate(conf, servers)
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+
+	expect, err := ioutil.ReadFile("test-fixtures/simple.conf.out")
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+
+	if !bytes.Equal(out, expect) {
+		t.Fatalf("bad: %s", out)
+	}
+}
 
 func TestReload(t *testing.T) {
 	os.Remove("test_out")
@@ -23,6 +56,7 @@ func TestReload(t *testing.T) {
 	if string(bytes) != "foo\n" {
 		t.Fatalf("bad: %v", bytes)
 	}
+	os.Remove("test_out")
 }
 
 func TestShouldStop(t *testing.T) {

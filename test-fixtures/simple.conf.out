@@ -1,0 +1,18 @@
+global
+    maxconn 256
+
+defaults
+    timeout connect 5000ms
+
+frontend http-in
+    bind *:80
+    default_backend app
+
+backend app
+    server node1_app 127.0.0.1:8000
+    server node3_app 127.0.0.3:8000
+
+listen admin
+    bind *:8080
+    stats enable
+
