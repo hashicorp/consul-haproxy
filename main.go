@@ -97,6 +97,11 @@ func getConfig() (*Config, error) {
 // realMain is the actual entry point, but we wrap it to set
 // a proper exit code on return
 func realMain() int {
+	if len(os.Args) == 1 {
+		usage()
+		return 1
+	}
+
 	// Read the configuration
 	conf, err := getConfig()
 	if err != nil {
