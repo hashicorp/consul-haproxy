@@ -9,6 +9,88 @@ import (
 	"time"
 )
 
+func TestMaybeRefresh(t *testing.T) {
+	defer os.Remove("config_out")
+	defer os.Remove("reload_out")
+
+	en1 := &consulapi.ServiceEntry{
+		Node:    &consulapi.Node{Node: "node1", Address: "127.0.0.1"},
+		Service: &consulapi.AgentService{ID: "app", Port: 8000},
+	}
+	en2 := &consulapi.ServiceEntry{
+		Node:    &consulapi.Node{Node: "node3", Address: "127.0.0.3"},
+		Service: &consulapi.AgentService{ID: "app", Port: 8000},
+	}
+	wp1 := &WatchPath{Backend: "app"}
+	wp2 := &WatchPath{Backend: "app"}
+	d := &backendData{
+		Servers: map[*WatchPath][]*consulapi.ServiceEntry{
+			wp1: []*consulapi.ServiceEntry{en1},
+			wp2: []*consulapi.ServiceEntry{en2},
+		},
+		Backends: map[string][]*WatchPath{
+			"app": []*WatchPath{wp1, wp2},
+		},
+	}
+	conf := &Config{
+		watches:       []*WatchPath{wp1, wp2},
+		Template:      "test-fixtures/simple.conf",
+		Path:          "config_out",
+		ReloadCommand: "echo 'foo' > reload_out",
+	}
+
+	// Attempt a refresh
+	if maybeRefresh(conf, d) {
+		t.Fatalf("unexpected exit")
+	}
+
+	// Check config file
+	out, err := ioutil.ReadFile("config_out")
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	expect, err := ioutil.ReadFile("test-fixtures/simple.conf.out")
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	if !bytes.Equal(out, expect) {
+		t.Fatalf("bad: %s", out)
+	}
+
+	// Check reload fie
+	bytes, err := ioutil.ReadFile("reload_out")
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	if string(bytes) != "foo\n" {
+		t.Fatalf("bad: %v", bytes)
+	}
+}
+
+func TestAllWatchesReturned(t *testing.T) {
+	wp1 := &WatchPath{Backend: "app"}
+	wp2 := &WatchPath{Backend: "app"}
+	wp3 := &WatchPath{Backend: "db"}
+	d := &backendData{
+		Servers: map[*WatchPath][]*consulapi.ServiceEntry{
+			wp1: nil,
+			wp2: nil,
+		},
+	}
+	conf := &Config{
+		watches: []*WatchPath{wp1, wp2, wp3},
+	}
+
+	if allWatchesReturned(conf, d) {
+		t.Fatalf("unexpected done")
+	}
+
+	d.Servers[wp3] = nil
+	if !allWatchesReturned(conf, d) {
+		t.Fatalf("expected done")
+	}
+}
+
 func TestAggregateServers(t *testing.T) {
 	en1 := &consulapi.ServiceEntry{
 		Node:    &consulapi.Node{Node: "node1", Address: "127.0.0.1"},
