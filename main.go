@@ -157,11 +157,11 @@ func validateConfig(conf *Config) (errs []error) {
 		}
 	}
 
-	if conf.Path == "" {
+	if conf.Path == "" && !conf.DryRun {
 		errs = append(errs, errors.New("missing configuration path"))
 	}
 
-	if conf.ReloadCommand == "" {
+	if conf.ReloadCommand == "" && !conf.DryRun {
 		errs = append(errs, errors.New("missing reload command"))
 	}
 

@@ -150,7 +150,7 @@ First lets create a simple template:
 
 Now, we can run the following to get our output configuration:
 
-    ./bin/consul-haproxy -addr=demo.consul.io:80 -template test_in.conf -path /dev/null -dry -reload cat -backend "consul=consul"
+    ./bin/consul-haproxy -addr=demo.consul.io -template test_in.conf -backend "consul=consul" -dry
 
 When this runs, we should see something like the following:
 
