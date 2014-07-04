@@ -150,7 +150,7 @@ First lets create a simple template:
 
 Now, we can run the following to get our output configuration:
 
-    ./bin/consul-haproxy -addr=demo.consul.io -template test_in.conf -backend "consul=consul:80" -dry
+    ./bin/consul-haproxy -addr=demo.consul.io -template in.conf -backend "consul=consul@nyc1:80" -backend "consul=consul@sfo1:80" -dry
 
 When this runs, we should see something like the following:
 
@@ -166,7 +166,10 @@ When this runs, we should see something like the following:
 
     listen http-in
         bind *:8000
-        server 0_nyc1-consul-1_consul 192.241.159.115:8300
-        server 0_nyc1-consul-2_consul 192.241.158.205:8300
-        server 0_nyc1-consul-3_consul 198.199.77.133:8300
+        server 0_nyc1-consul-1_consul 192.241.159.115:80
+        server 0_nyc1-consul-2_consul 192.241.158.205:80
+        server 0_nyc1-consul-3_consul 198.199.77.133:80
+        server 1_sfo1-consul-2_consul 162.243.155.82:80
+        server 1_sfo1-consul-1_consul 107.170.195.169:80
+        server 1_sfo1-consul-3_consul 107.170.195.158:80
 
