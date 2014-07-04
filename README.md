@@ -67,8 +67,8 @@ and used to populate the configuration file. The syntax for a backend is:
 
 The specification provides a variable name for the template `backend_name`,
 which is defined as the entries that match the given tag and service for a specific
-datacenter. A port can also be provided in case the service does not set a port
-in Consul. The tag, datacenter, and port are all optional and can be omitted.
+datacenter. A port can also be provided, which overrides the port specified by
+the service. The tag, datacenter, and port are all optional and can be omitted.
 
 Below are a few examples:
 
@@ -76,7 +76,7 @@ Below are a few examples:
   the `webapp` service, filtering on the `release` tag.
 
 * `db=mysql@east-aws:5500` - This defines a template variable `db` which watches for
-  the `mysql` service in the `east-aws` datacenter, using port 5500 if no port is given.
+  the `mysql` service in the `east-aws` datacenter, using port 5500.
 
 A useful features is the ability to specify multiple backends with the same variable
 name. This cuases the nodes to be merged. This can be used to merge nodes with various
@@ -110,18 +110,16 @@ We might provide a very basic template like:
     defaults
         mode tcp
         timeout connect 5000ms
+        timeout client 60000ms
+        timeout server 60000ms
 
     listen http-in
-        bind *:80
-        {{range .app}}
-        {{.}} maxconn 32
-        {{end}}
+        bind *:80{{range .app}}
+        {{.}} maxconn 32{{end}}
 
     listen cache-in
-        bind *:4444
-        {{range .cache}}
-        {{.}} maxconn 64
-        {{end}}
+        bind *:4444{{range .cache}}
+        {{.}} maxconn 64{{end}}
 
 This will populate the `http-in` block with the servers
 in the `app` backend, and the `cache-in` with the servers
@@ -143,14 +141,16 @@ First lets create a simple template:
     defaults
         mode tcp
         timeout connect 5000ms
+        timeout client 60000ms
+        timeout server 60000ms
 
     listen http-in
-        bind *:80{{range .consul}}
+        bind *:8000{{range .consul}}
         {{.}}{{end}}
 
 Now, we can run the following to get our output configuration:
 
-    ./bin/consul-haproxy -addr=demo.consul.io -template test_in.conf -backend "consul=consul" -dry
+    ./bin/consul-haproxy -addr=demo.consul.io -template test_in.conf -backend "consul=consul:80" -dry
 
 When this runs, we should see something like the following:
 
@@ -161,9 +161,11 @@ When this runs, we should see something like the following:
     defaults
         mode tcp
         timeout connect 5000ms
+        timeout client 60000ms
+        timeout server 60000ms
 
     listen http-in
-        bind *:80
+        bind *:8000
         server 0_nyc1-consul-1_consul 192.241.159.115:8300
         server 0_nyc1-consul-2_consul 192.241.158.205:8300
         server 0_nyc1-consul-3_consul 198.199.77.133:8300

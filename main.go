@@ -269,10 +269,9 @@ Usage: %s [options]
 
   In this syntax, we are defining a template variable 'app',
   which is populated from the 'webapp' service, 'release' tag, in the
-  'east-aws' datacenter, using port 8000. The port is only used if
-  the service does not define its port (e.g. specified as 0). The
-  tag, datacenter and port are optional. So we could also specify
-  this as:
+  'east-aws' datacenter, using port 8000. If the port is given it
+  overrides any specified by the service. The tag, datacenter
+  and port are optional. So we could also specify this as:
 
     app=webapp
 

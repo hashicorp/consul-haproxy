@@ -230,8 +230,8 @@ func runSingleWatch(conf *Config, data *backendData, idx int, watch *WatchPath) 
 			// prevents a name conflict on duplicate names
 			entry.Node.Node = fmt.Sprintf("%d_%s", idx, entry.Node.Node)
 
-			// Patch the port if provided and the service hasn't registered
-			if watch.Port != 0 && entry.Service.Port == 0 {
+			// Patch the port if provided
+			if watch.Port != 0 {
 				entry.Service.Port = watch.Port
 			}
 		}
