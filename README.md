@@ -33,16 +33,16 @@ The `consul-haproxy` command takes a number of CLI flags:
 * `-f` - Path to config file, overwrites CLI flags. The format of the
   file is documented below.
 
-* `-path` - Path to output configuration file. This path must be writable
+* `-in`- Path to a template file. This is the template that is rendered
+  to generate the configuration file at `-out`. It uses the Golang templating
+  system. Docs for that are [here](http://golang.org/pkg/text/template/).
+
+* `-out` - Path to output configuration file. This path must be writable
   by `consul-haproxy` or the file cannot be updated.
 
 * `-reload` - Command to invoke to reload configuration. This command can
   be any executable, and should be used to reload HAProxy. This is invoked
   only after the configuration file is updated.
-
-* `-template`- Path to a template file. This is the template that is rendered
-  to generate the configuration file at `-path`. It uses the Golang templating
-  system. Docs for that are [here](http://golang.org/pkg/text/template/).
 
 In addition to using CLI flags, `consul-haproxy` can be configured using a
 file given the `-f` flag. A configuration file overrides any values given by
@@ -53,9 +53,9 @@ object with the following keys:
 * `backends` - A list of backend specifications. This is merged with any
   backends provided via the CLI.
 * `dry_run` - Same as `-dry` CLI flag.
-* `path` - Same as `-path` CLI flag.
+* `path` - Same as `-out` CLI flag.
 * `reload_command` - Same as `-reload` CLI flag.
-* `template` - Same as `-template` CLI flag.
+* `template` - Same as `-in` CLI flag.
 
 ## Backend Specification
 
@@ -150,7 +150,7 @@ First lets create a simple template:
 
 Now, we can run the following to get our output configuration:
 
-    ./bin/consul-haproxy -addr=demo.consul.io -template in.conf -backend "consul=consul@nyc1:80" -backend "consul=consul@sfo1:80" -dry
+    ./bin/consul-haproxy -addr=demo.consul.io -in in.conf -backend "consul=consul@nyc1:80" -backend "consul=consul@sfo1:80" -dry
 
 When this runs, we should see something like the following:
 

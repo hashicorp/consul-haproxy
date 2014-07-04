@@ -72,8 +72,8 @@ func getConfig() (*Config, error) {
 	cmdFlags := flag.NewFlagSet("consul-haproxy", flag.ContinueOnError)
 	cmdFlags.Usage = usage
 	cmdFlags.StringVar(&conf.Address, "addr", "127.0.0.1:8500", "consul HTTP API address with port")
-	cmdFlags.StringVar(&conf.Template, "template", "", "template path")
-	cmdFlags.StringVar(&conf.Path, "path", "", "config path")
+	cmdFlags.StringVar(&conf.Template, "in", "", "template path")
+	cmdFlags.StringVar(&conf.Path, "out", "", "config path")
 	cmdFlags.StringVar(&conf.ReloadCommand, "reload", "", "reload command")
 	cmdFlags.StringVar(&configFile, "f", "", "config file")
 	cmdFlags.BoolVar(&conf.DryRun, "dry", false, "dry run")
@@ -294,7 +294,7 @@ Options:
   -backend=spec         Backend specification. Can be provided multiple times.
   -dry                  Dry run. Emit config file to stdout.
   -f=path               Path to config file, overwrites CLI flags
-  -path=path            Path to output configuration file
+  -in=path              Path to a template file
+  -out=path             Path to output configuration file
   -reload=cmd           Command to invoke to reload configuration
-  -template=path        Path to a template file
 `
