@@ -145,12 +145,12 @@ First lets create a simple template:
         timeout server 60000ms
 
     listen http-in
-        bind *:8000{{range .consul}}
+        bind *:8000{{range .c}}
         {{.}}{{end}}
 
 Now, we can run the following to get our output configuration:
 
-    ./bin/consul-haproxy -addr=demo.consul.io -in in.conf -backend "consul=consul@nyc1:80" -backend "consul=consul@sfo1:80" -dry
+    ./bin/consul-haproxy -addr=demo.consul.io -in in.conf -backend "c=consul@nyc1:80" -backend "c=consul@sfo1:80" -dry
 
 When this runs, we should see something like the following:
 
