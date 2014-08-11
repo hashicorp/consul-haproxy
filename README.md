@@ -84,7 +84,7 @@ tags, or different datacenters together. As an example, we can define:
 
     app=webapp@dc1
     app=webapp@dc2
-    app=webapp@dc2
+    app=webapp@dc3
 
 This backend specification sets `app` variable to be the union of the servers
 in the `dc1`, `dc2`, and `dc3` datacenters.
@@ -150,7 +150,7 @@ First lets create a simple template:
 
 Now, we can run the following to get our output configuration:
 
-    ./bin/consul-haproxy -addr=demo.consul.io -in in.conf -backend "c=consul@nyc1:80" -backend "c=consul@sfo1:80" -dry
+    consul-haproxy -addr=demo.consul.io -in in.conf -backend "c=consul@nyc1:80" -backend "c=consul@sfo1:80" -dry
 
 When this runs, we should see something like the following:
 
