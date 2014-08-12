@@ -11,7 +11,7 @@ Consul.
 
 ## Download & Compilation
 
-Download a release from the [releases page](#), or compile from source:
+Download a release from the [releases page](https://github.com/hashicorp/consul-haproxy/releases), or compile from source:
 
 ```
 $ make
