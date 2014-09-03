@@ -315,17 +315,39 @@ func backoff(interval time.Duration, times int) time.Duration {
 	return interval * time.Duration(math.Pow(2, float64(times)))
 }
 
+// ServerEntry is the full data structure exposed to
+// the template for each server
+type ServerEntry struct {
+	ID      string
+	Service string
+	Tags    []string
+	Port    int
+	IP      net.IP
+	Node    string
+}
+
+// String is the default text representation of a server
+func (se *ServerEntry) String() string {
+	name := fmt.Sprintf("%s_%s", se.Node, se.ID)
+	addr := &net.TCPAddr{IP: se.IP, Port: se.Port}
+	return fmt.Sprintf("server %s %s", name, addr)
+}
+
 // formatOutput converts the service entries into a format
 // suitable for templating into the HAProxy file
-func formatOutput(inp map[string][]*consulapi.ServiceEntry) map[string][]string {
-	out := make(map[string][]string)
+func formatOutput(inp map[string][]*consulapi.ServiceEntry) map[string][]*ServerEntry {
+	out := make(map[string][]*ServerEntry)
 	for backend, entries := range inp {
-		servers := make([]string, len(entries))
+		servers := make([]*ServerEntry, len(entries))
 		for idx, entry := range entries {
-			name := fmt.Sprintf("%s_%s", entry.Node.Node, entry.Service.ID)
-			ip := net.ParseIP(entry.Node.Address)
-			addr := &net.TCPAddr{IP: ip, Port: entry.Service.Port}
-			servers[idx] = fmt.Sprintf("server %s %s", name, addr)
+			servers[idx] = &ServerEntry{
+				ID:      entry.Service.ID,
+				Service: entry.Service.Service,
+				Tags:    entry.Service.Tags,
+				Port:    entry.Service.Port,
+				IP:      net.ParseIP(entry.Node.Address),
+				Node:    entry.Node.Node,
+			}
 		}
 		out[backend] = servers
 	}
