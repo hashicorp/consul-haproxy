@@ -79,7 +79,7 @@ Below are a few examples:
   the `mysql` service in the `east-aws` datacenter, using port 5500.
 
 A useful features is the ability to specify multiple backends with the same variable
-name. This cuases the nodes to be merged. This can be used to merge nodes with various
+name. This causes the nodes to be merged. This can be used to merge nodes with various
 tags, or different datacenters together. As an example, we can define:
 
     app=webapp@dc1
