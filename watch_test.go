@@ -277,10 +277,10 @@ func TestFormatOutput(t *testing.T) {
 	if len(foo) != 2 {
 		t.Fatalf("bad: %v", foo)
 	}
-	if foo[0] != "server node1_redis 127.0.0.1:8000" {
+	if foo[0].String() != "server node1_redis 127.0.0.1:8000" {
 		t.Fatalf("Bad: %v", foo)
 	}
-	if foo[1] != "server node3_redis 127.0.0.3:1234" {
+	if foo[1].String() != "server node3_redis 127.0.0.3:1234" {
 		t.Fatalf("Bad: %v", foo)
 	}
 
@@ -288,10 +288,10 @@ func TestFormatOutput(t *testing.T) {
 	if len(bar) != 2 {
 		t.Fatalf("bad: %v", bar)
 	}
-	if bar[0] != "server node2_memcache 127.0.0.2:80" {
+	if bar[0].String() != "server node2_memcache 127.0.0.2:80" {
 		t.Fatalf("Bad: %v", bar)
 	}
-	if bar[1] != "server node4_memcache 127.0.0.4:10000" {
+	if bar[1].String() != "server node4_memcache 127.0.0.4:10000" {
 		t.Fatalf("Bad: %v", bar)
 	}
 }
