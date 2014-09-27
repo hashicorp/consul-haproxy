@@ -44,6 +44,15 @@ The `consul-haproxy` command takes a number of CLI flags:
   be any executable, and should be used to reload HAProxy. This is invoked
   only after the configuration file is updated.
 
+* `-quiet` - Quiet specifies a duration of time to wait for no updates
+  before writing out the new configuration. This allows for waiting until
+  a service stabilizes to prevent many different reloads.
+
+* `-max-wait` - Max wait is used to limit how waiting is done for a quiet
+  period before forcing a reload. This defaults to 4x the `-quiet` value.
+  As an example, if `-quiet=30s` but the backends are constantly flapping,
+  a refresh will be forced after 2 minutes.
+
 In addition to using CLI flags, `consul-haproxy` can be configured using a
 file given the `-f` flag. A configuration file overrides any values given by
 the CLI unless otherwise specified. The configuration file should be a JSON
@@ -56,6 +65,8 @@ object with the following keys:
 * `path` - Same as `-out` CLI flag.
 * `reload_command` - Same as `-reload` CLI flag.
 * `template` - Same as `-in` CLI flag.
+* `quiet` - Same as `-quiet` CLI flag.
+* `max_wait` - Same as `-max-wait` CLI flag.
 
 ## Backend Specification
 
