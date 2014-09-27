@@ -234,6 +234,13 @@ func runSingleWatch(conf *Config, data *backendData, idx int, watch *WatchPath) 
 			if watch.Port != 0 {
 				entry.Service.Port = watch.Port
 			}
+
+			// Clear the health output to prevent reloading due to changes
+			// in output text since we don't care.
+			for _, c := range entry.Checks {
+				c.Notes = ""
+				c.Output = ""
+			}
 		}
 
 		// Update the entries. If this is the first read, do it on error
