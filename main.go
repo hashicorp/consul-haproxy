@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/mitchellh/mapstructure"
 )
@@ -56,6 +57,19 @@ type Config struct {
 	// "name=(tag.)service"
 	Backends []string `mapstructure:"backends"`
 
+	// Quiet is how long we wait for a "quiet" period before
+	// trigger the re-build and re-load. This allows us to
+	// wait for the system to reach a quiescent state instead
+	// of trigger constant updates.
+	Quiet time.Duration `mapstructure:"quiet"`
+
+	// MaxWait works with Quiet to limit the maximum amount of
+	// time we wait before forcing a reload to take place.
+	// In the case of an unstable system (constant flapping),
+	// this allows progress to be made. Defaults to 4x the
+	// Quiet value if not provided.
+	MaxWait time.Duration `mapstructure:"max_wait"`
+
 	// watches are the watches we need to track
 	watches []*WatchPath
 }
@@ -77,6 +91,8 @@ func getConfig() (*Config, error) {
 	cmdFlags.StringVar(&conf.ReloadCommand, "reload", "", "reload command")
 	cmdFlags.StringVar(&configFile, "f", "", "config file")
 	cmdFlags.BoolVar(&conf.DryRun, "dry", false, "dry run")
+	cmdFlags.DurationVar(&conf.Quiet, "quiet", 0, "quiet period")
+	cmdFlags.DurationVar(&conf.MaxWait, "max-wait", 0, "maximum wait for a quiet period")
 	cmdFlags.Var((*AppendSliceValue)(&backends), "backend", "backend to populate")
 	if err := cmdFlags.Parse(os.Args[1:]); err != nil {
 		return nil, err
@@ -195,6 +211,17 @@ func validateConfig(conf *Config) (errs []error) {
 		conf.watches = append(conf.watches, wp)
 	}
 
+	// Ensure a non-negative time interval
+	if conf.Quiet < 0 || conf.MaxWait < 0 {
+		errs = append(errs, errors.New("Cannot specify a negative time interval"))
+	}
+
+	// Handle setting a default MaxWait if a quiet period
+	// is configured
+	if conf.Quiet != 0 && conf.MaxWait == 0 {
+		conf.MaxWait = 4 * conf.Quiet
+	}
+
 	return
 }
 
@@ -297,4 +324,6 @@ Options:
   -in=path              Path to a template file
   -out=path             Path to output configuration file
   -reload=cmd           Command to invoke to reload configuration
+  -quiet=0s             Period to wait without updates before trigger reload.
+  -max-wait=0s          Maxium time to wait for quiet period. Default 4x of -quiet.
 `

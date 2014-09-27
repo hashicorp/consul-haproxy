@@ -49,6 +49,13 @@ type backendData struct {
 
 	// StopCh is used to trigger a stop
 	StopCh chan struct{}
+
+	// quietTimer is used to wati for quiescence
+	quietTimer <-chan time.Time
+
+	// maxWaitTimer is used to prevent unbounded waiting
+	// for quiescence
+	maxWaitTimer <-chan time.Time
 }
 
 // watch is used to start a long running watcher to handle updates.
@@ -107,6 +114,20 @@ func runWatch(conf *Config, stopCh, doneCh chan struct{}) {
 				return
 			}
 
+		case <-data.quietTimer:
+			data.quietTimer = nil
+			data.maxWaitTimer = nil
+			if forceRefresh(conf, data) {
+				return
+			}
+
+		case <-data.maxWaitTimer:
+			data.quietTimer = nil
+			data.maxWaitTimer = nil
+			if forceRefresh(conf, data) {
+				return
+			}
+
 		case <-stopCh:
 			return
 		}
@@ -120,6 +141,20 @@ func maybeRefresh(conf *Config, data *backendData) (exit bool) {
 		return
 	}
 
+	// If a quiet period is enabled, start the timer
+	if conf.Quiet != 0 {
+		data.quietTimer = time.After(conf.Quiet)
+		if data.maxWaitTimer == nil {
+			data.maxWaitTimer = time.After(conf.MaxWait)
+		}
+		return
+	}
+
+	return forceRefresh(conf, data)
+}
+
+// forceRefresh is used to immediately refresh
+func forceRefresh(conf *Config, data *backendData) (exit bool) {
 	// Merge the data for each backend
 	backendServers := aggregateServers(data)
 
