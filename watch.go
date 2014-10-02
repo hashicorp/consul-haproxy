@@ -158,25 +158,29 @@ func forceRefresh(conf *Config, data *backendData) (exit bool) {
 	// Merge the data for each backend
 	backendServers := aggregateServers(data)
 
-	// Build the output template
-	output, err := buildTemplate(conf, backendServers)
-	if err != nil {
-		log.Printf("[ERR] %v", err)
-		return true
-	}
+	// Iterate through the list of templates to render
+	for idx, templatePath := range conf.Templates {
 
-	// Check for a dry run
-	if conf.DryRun {
-		fmt.Printf("%s\n", output)
-		return true
-	}
+		// Build the output template
+		output, err := buildTemplate(templatePath, backendServers)
+		if err != nil {
+			log.Printf("[ERR] %v", err)
+			return true
+		}
 
-	// Write out the configuration
-	if err := ioutil.WriteFile(conf.Path, output, 0660); err != nil {
-		log.Printf("[ERR] Failed to write config file: %v", err)
-		return true
+		// Check for a dry run
+		if conf.DryRun {
+			fmt.Printf("%s\n", output)
+			return true
+		}
+
+		// Write out the configuration
+		if err := ioutil.WriteFile(conf.Paths[idx], output, 0660); err != nil {
+			log.Printf("[ERR] Failed to write config file at %s: %v", conf.Paths[idx], err)
+			return true
+		}
+		log.Printf("[INFO] Updated configuration file at %s", conf.Paths[idx])
 	}
-	log.Printf("[INFO] Updated configuration file at %s", conf.Path)
 
 	// Invoke the reload hook
 	if err := reload(conf); err != nil {
@@ -212,15 +216,15 @@ func aggregateServers(data *backendData) map[string][]*consulapi.ServiceEntry {
 	return backendServers
 }
 
-// buildTemplate is used to build the output template
+// buildTemplate is used to build the output templates
 // from the configuration and server list
-func buildTemplate(conf *Config,
+func buildTemplate(templatePath string,
 	servers map[string][]*consulapi.ServiceEntry) ([]byte, error) {
 	// Format the output
 	outVars := formatOutput(servers)
 
 	// Read the template
-	raw, err := ioutil.ReadFile(conf.Template)
+	raw, err := ioutil.ReadFile(templatePath)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read template: %v", err)
 	}

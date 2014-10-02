@@ -45,10 +45,10 @@ type Config struct {
 	Address string `mapstructure:"address"`
 
 	// Path to the HAProxy template file
-	Template string `mapstructure:"template"`
+	Templates []string `mapstructure:"templates"`
 
 	// Path to the HAProxy configuration file to write
-	Path string `mapstructure:"path"`
+	Paths []string `mapstructure:"paths"`
 
 	// Command used to reload HAProxy
 	ReloadCommand string `mapstructure:"reload_command"`
@@ -82,12 +82,15 @@ func main() {
 func getConfig() (*Config, error) {
 	var configFile string
 	var backends []string
+	var templates  []string
+	var paths []string
+
 	conf := &Config{}
 	cmdFlags := flag.NewFlagSet("consul-haproxy", flag.ContinueOnError)
 	cmdFlags.Usage = usage
 	cmdFlags.StringVar(&conf.Address, "addr", "127.0.0.1:8500", "consul HTTP API address with port")
-	cmdFlags.StringVar(&conf.Template, "in", "", "template path")
-	cmdFlags.StringVar(&conf.Path, "out", "", "config path")
+	cmdFlags.Var((*AppendSliceValue)(&templates), "in", "template path")
+	cmdFlags.Var((*AppendSliceValue)(&paths), "out", "config path")
 	cmdFlags.StringVar(&conf.ReloadCommand, "reload", "", "reload command")
 	cmdFlags.StringVar(&configFile, "f", "", "config file")
 	cmdFlags.BoolVar(&conf.DryRun, "dry", false, "dry run")
@@ -105,7 +108,9 @@ func getConfig() (*Config, error) {
 		}
 	}
 
-	// Merge the backends together
+	// Merge the templates, paths, and backends together
+	conf.Templates = append(conf.Templates, templates...)
+	conf.Paths = append(conf.Paths, paths...)
 	conf.Backends = append(conf.Backends, backends...)
 	return conf, nil
 }
@@ -164,17 +169,23 @@ func readConfig(path string, config *Config) error {
 // validateConfig is used to sanity check the configuration
 func validateConfig(conf *Config) (errs []error) {
 	// Check the template
-	if conf.Template == "" {
+	if len(conf.Templates) == 0 {
 		errs = append(errs, errors.New("missing template path"))
 	} else {
-		_, err := ioutil.ReadFile(conf.Template)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("failed to read template: %v", err))
+		for _, t := range conf.Templates {
+			_, err := ioutil.ReadFile(t)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("failed to read template '%s': %v", t, err))
+			}
 		}
 	}
 
-	if conf.Path == "" && !conf.DryRun {
+	if len(conf.Paths) == 0 && !conf.DryRun {
 		errs = append(errs, errors.New("missing configuration path"))
+	}
+
+	if (len(conf.Templates) != len(conf.Paths)) && !conf.DryRun {
+		errs = append(errs, errors.New("number of templates and paths do not match"))
 	}
 
 	if conf.ReloadCommand == "" && !conf.DryRun {
@@ -321,8 +332,8 @@ Options:
   -backend=spec         Backend specification. Can be provided multiple times.
   -dry                  Dry run. Emit config file to stdout.
   -f=path               Path to config file, overwrites CLI flags
-  -in=path              Path to a template file
-  -out=path             Path to output configuration file
+  -in=path              Path to a template file.  Can be provided multiple times.
+  -out=path             Path to output configuration file. Can be provided multiple times.
   -reload=cmd           Command to invoke to reload configuration
   -quiet=0s             Period to wait without updates before trigger reload.
   -max-wait=0s          Maxium time to wait for quiet period. Default 4x of -quiet.

@@ -6,9 +6,9 @@ defaults
 
 frontend http-in
     bind *:80
-    default_backend app
+    default_backend app2
 
-backend app
+backend app2
     server node1_app 127.0.0.1:8000
     server node3_app 127.0.0.3:8000
 
