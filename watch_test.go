@@ -11,6 +11,7 @@ import (
 
 func TestMaybeRefresh(t *testing.T) {
 	defer os.Remove("config_out")
+	defer os.Remove("config_out2")
 	defer os.Remove("reload_out")
 
 	en1 := &consulapi.ServiceEntry{
@@ -32,10 +33,18 @@ func TestMaybeRefresh(t *testing.T) {
 			"app": []*WatchPath{wp1, wp2},
 		},
 	}
+	templates := []string {
+		"test-fixtures/simple.conf",
+		"test-fixtures/second.conf",
+	}
+	paths := []string {
+		"config_out",
+		"config_out2",
+	}
 	conf := &Config{
 		watches:       []*WatchPath{wp1, wp2},
-		Template:      "test-fixtures/simple.conf",
-		Path:          "config_out",
+		Templates:     templates,
+		Paths:         paths,
 		ReloadCommand: "echo 'foo' > reload_out",
 	}
 
@@ -54,6 +63,19 @@ func TestMaybeRefresh(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 	if !bytes.Equal(out, expect) {
+		t.Fatalf("bad: %s", out)
+	}
+
+	// Check second config file
+	out2, err := ioutil.ReadFile("config_out2")
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	expect2, err := ioutil.ReadFile("test-fixtures/second.conf.out")
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	if !bytes.Equal(out2, expect2) {
 		t.Fatalf("bad: %s", out)
 	}
 
@@ -139,8 +161,13 @@ func TestAggregateServers(t *testing.T) {
 }
 
 func TestBuildTemplate(t *testing.T) {
-	conf := &Config{
-		Template: "test-fixtures/simple.conf",
+	templates := []string {
+		"test-fixtures/simple.conf",
+		"test-fixtures/second.conf",
+	}
+	expectations := []string {
+		"test-fixtures/simple.conf.out",
+		"test-fixtures/second.conf.out",
 	}
 	servers := map[string][]*consulapi.ServiceEntry{
 		"app": []*consulapi.ServiceEntry{
@@ -155,18 +182,22 @@ func TestBuildTemplate(t *testing.T) {
 		},
 	}
 
-	out, err := buildTemplate(conf, servers)
-	if err != nil {
-		t.Fatalf("err: %v", err)
-	}
+	// Iterate through the list of templates to render
+	for idx, templatePath := range templates {
+		out, err := buildTemplate(templatePath, servers)
+		if err != nil {
+			t.Fatalf("err: %v", err)
+		}
 
-	expect, err := ioutil.ReadFile("test-fixtures/simple.conf.out")
-	if err != nil {
-		t.Fatalf("err: %v", err)
-	}
+		expect, err := ioutil.ReadFile(expectations[idx])
+		if err != nil {
+			t.Fatalf("err: %v", err)
+		}
 
-	if !bytes.Equal(out, expect) {
-		t.Fatalf("bad: %s", out)
+		if !bytes.Equal(out, expect) {
+			t.Fatalf("bad: %s", out)
+		}
+
 	}
 }
 

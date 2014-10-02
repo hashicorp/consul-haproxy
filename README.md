@@ -36,9 +36,12 @@ The `consul-haproxy` command takes a number of CLI flags:
 * `-in`- Path to a template file. This is the template that is rendered
   to generate the configuration file at `-out`. It uses the Golang templating
   system. Docs for that are [here](http://golang.org/pkg/text/template/).
+  Can be provided multiple times. If specified multiple times, specify the
+  same number of paths with `-out`.
 
 * `-out` - Path to output configuration file. This path must be writable
-  by `consul-haproxy` or the file cannot be updated.
+  by `consul-haproxy` or the file cannot be updated. This can be specified
+  multiple times.
 
 * `-reload` - Command to invoke to reload configuration. This command can
   be any executable, and should be used to reload HAProxy. This is invoked
@@ -62,9 +65,11 @@ object with the following keys:
 * `backends` - A list of backend specifications. This is merged with any
   backends provided via the CLI.
 * `dry_run` - Same as `-dry` CLI flag.
-* `path` - Same as `-out` CLI flag.
+* `paths` - Same as `-out` CLI flag. . This value should be a list of paths and
+  is merged with any paths provided via the CLI.
 * `reload_command` - Same as `-reload` CLI flag.
-* `template` - Same as `-in` CLI flag.
+* `templates` - Same as `-in` CLI flag. This value should be a list of templates
+  and is merged with any paths provided via the CLI.
 * `quiet` - Same as `-quiet` CLI flag.
 * `max_wait` - Same as `-max-wait` CLI flag.
 
@@ -183,4 +188,3 @@ When this runs, we should see something like the following:
         server 1_sfo1-consul-2_consul 162.243.155.82:80
         server 1_sfo1-consul-1_consul 107.170.195.169:80
         server 1_sfo1-consul-3_consul 107.170.195.158:80
-

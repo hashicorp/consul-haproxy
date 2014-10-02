@@ -51,10 +51,19 @@ func TestReadConfig(t *testing.T) {
 	if conf.Address != "127.0.0.2:8500" {
 		t.Fatalf("bad: %v", conf)
 	}
-	if conf.Template != "test-fixtures/simple.conf" {
+	templates := []string{
+		"test-fixtures/simple.conf",
+		"test-fixtures/second.conf",
+	}
+	if !reflect.DeepEqual(conf.Templates, templates) {
 		t.Fatalf("bad: %v", conf)
 	}
-	if conf.Path != "output.conf" {
+	paths := []string{
+		"output.conf",
+		"output2.conf",
+	}
+	if !reflect.DeepEqual(conf.Paths, paths) {
+
 		t.Fatalf("bad: %v", conf)
 	}
 	if conf.ReloadCommand != "echo 'foo' > reload_out" {
