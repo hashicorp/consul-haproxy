@@ -1,3 +1,7 @@
+## 0.2.0 (October 11, 2014)
+
+* Add the ability to use multiple templates & paths
+
 ## 0.1.1 (September 29, 2014)
 
 * Support for `-quiet` and `-max-wait`
@@ -7,4 +11,3 @@
 ## 0.1.0 (August 11, 2014)
 
 * Initial release
-
