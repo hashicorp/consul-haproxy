@@ -1,4 +1,4 @@
-## 0.2.0 (October 11, 2014)
+## 0.2.0 (October 09, 2014)
 
 * Add the ability to use multiple templates & paths
 
