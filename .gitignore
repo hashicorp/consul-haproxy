@@ -23,3 +23,6 @@ _testmain.go
 *.test
 consul-haproxy
 *.conf
+
+bin/
+build/
