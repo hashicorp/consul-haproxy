@@ -1,0 +1,22 @@
+import directors;    # load the directors
+
+backend node1_app { 
+    .host = "127.0.0.1";
+    .port = "8000";
+}
+backend node3_app { 
+    .host = "127.0.0.3";
+    .port = "8000";
+}
+
+sub vcl_init {
+    new bar = directors.round_robin();
+
+    bar.add_backend(node1_app);
+    bar.add_backend(node3_app);
+}
+
+sub vcl_recv {
+    # send all traffic to the bar director:
+    set req.backend_hint = bar.backend();
+}

@@ -188,3 +188,76 @@ When this runs, we should see something like the following:
         server 1_sfo1-consul-2_consul 162.243.155.82:80
         server 1_sfo1-consul-1_consul 107.170.195.169:80
         server 1_sfo1-consul-3_consul 107.170.195.158:80
+
+## Varnish Example
+
+
+derived from the varnish director example from the varnish page: https://www.varnish-cache.org/docs/trunk/users-guide/vcl-backends.html#directors
+
+	import directors;    # load the directors
+	{{range .c}}
+	backend {{.Node}}_{{.ID}} { 
+	    .host = "{{.IP}}";
+	    .port = "{{.Port}}";
+	}{{end}}
+
+	sub vcl_init {
+	    new bar = directors.round_robin();
+	{{range .c}}
+	    bar.add_backend({{.Node}}_{{.ID}});{{end}}
+	}
+
+	sub vcl_recv {
+	    # send all traffic to the bar director:
+	    set req.backend_hint = bar.backend();
+	}
+
+Now, we run the following command:
+
+    consul-haproxy -addr=demo.consul.io -in in.conf -backend "c=consul@nyc1:80" -backend "c=consul@sfo1:80" -dry
+
+The following should return:
+
+	backend 0_nyc1-server-1_consul {
+	    .host = "192.241.159.115";
+	    .port = "80";
+	}
+	backend 0_nyc1-server-3_consul {
+	    .host = "198.199.77.133";
+	    .port = "80";
+	}
+	backend 0_nyc1-server-2_consul {
+	    .host = "162.243.162.228";
+	    .port = "80";
+	}
+	backend 1_sfo1-server-3_consul {
+	    .host = "107.170.196.151";
+	    .port = "80";
+	}
+	backend 1_sfo1-server-2_consul {
+	    .host = "107.170.195.154";
+	    .port = "80";
+	}
+	backend 1_sfo1-server-1_consul {
+	    .host = "162.243.153.242";
+	    .port = "80";
+	}
+
+	sub vcl_init {
+	    new bar = directors.round_robin();
+
+	    bar.add_backend(0_nyc1-server-1_consul);
+	    bar.add_backend(0_nyc1-server-3_consul);
+	    bar.add_backend(0_nyc1-server-2_consul);
+	    bar.add_backend(1_sfo1-server-3_consul);
+	    bar.add_backend(1_sfo1-server-2_consul);
+	    bar.add_backend(1_sfo1-server-1_consul);
+	}
+
+	sub vcl_recv {
+	    # send all traffic to the bar director:
+	    set req.backend_hint = bar.backend();
+	}
+
+
+
