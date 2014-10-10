@@ -35,7 +35,7 @@ func TestMaybeRefresh(t *testing.T) {
 	}
 	templates := []string {
 		"test-fixtures/simple.conf",
-		"test-fixtures/second.conf",
+		"test-fixtures/varnish.vcl",
 	}
 	paths := []string {
 		"config_out",
@@ -71,7 +71,7 @@ func TestMaybeRefresh(t *testing.T) {
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
-	expect2, err := ioutil.ReadFile("test-fixtures/second.conf.out")
+	expect2, err := ioutil.ReadFile("test-fixtures/varnish.vcl.out")
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
@@ -163,11 +163,11 @@ func TestAggregateServers(t *testing.T) {
 func TestBuildTemplate(t *testing.T) {
 	templates := []string {
 		"test-fixtures/simple.conf",
-		"test-fixtures/second.conf",
+		"test-fixtures/varnish.vcl",
 	}
 	expectations := []string {
 		"test-fixtures/simple.conf.out",
-		"test-fixtures/second.conf.out",
+		"test-fixtures/varnish.vcl.out",
 	}
 	servers := map[string][]*consulapi.ServiceEntry{
 		"app": []*consulapi.ServiceEntry{
