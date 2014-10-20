@@ -145,7 +145,7 @@ any of those servers changing, allowing for dynamic updates.
 ## Example
 
 We run the example below against our
-[NYC demo server](http://nyc1.demo.consul.io). This lets you set
+[NYC demo server](http://nyc3.demo.consul.io). This lets you set
 quickly test consul-haproxy.
 
 First lets create a simple template:
@@ -166,7 +166,7 @@ First lets create a simple template:
 
 Now, we can run the following to get our output configuration:
 
-    consul-haproxy -addr=demo.consul.io -in in.conf -backend "c=consul@nyc1:80" -backend "c=consul@sfo1:80" -dry
+    consul-haproxy -addr=demo.consul.io -in in.conf -backend "c=consul@nyc3:80" -backend "c=consul@sfo1:80" -dry
 
 When this runs, we should see something like the following:
 
@@ -182,9 +182,9 @@ When this runs, we should see something like the following:
 
     listen http-in
         bind *:8000
-        server 0_nyc1-consul-1_consul 192.241.159.115:80
-        server 0_nyc1-consul-2_consul 192.241.158.205:80
-        server 0_nyc1-consul-3_consul 198.199.77.133:80
+        server 0_nyc3-consul-1_consul 192.241.159.115:80
+        server 0_nyc3-consul-2_consul 192.241.158.205:80
+        server 0_nyc3-consul-3_consul 198.199.77.133:80
         server 1_sfo1-consul-2_consul 162.243.155.82:80
         server 1_sfo1-consul-1_consul 107.170.195.169:80
         server 1_sfo1-consul-3_consul 107.170.195.158:80
