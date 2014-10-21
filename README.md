@@ -1,5 +1,7 @@
 # consul-haproxy
 
+**Deprecated** This project is deprecated. Consul HAProxy has been replaced by [Consul Template](https://github.com/hashicorp/consul-template). This repository is kept for history and legacy purposes. Please use Consul Template instead.
+
 This project provides `consul-haproxy`, a daemon for dynamically
 configuring HAProxy using data from Consul.
 
